@@ -29,6 +29,8 @@
 <script setup>
 import axios from 'axios'
 import { onMounted, ref } from 'vue'
+
+const api = 'https://todolist-api.hexschool.io'
 //註冊
 const signUpField = ref({
   email: '',
@@ -36,7 +38,6 @@ const signUpField = ref({
   nickname: ''
 })
 const signUpRes = ref('')
-const api = 'https://todolist-api.hexschool.io'
 const signUp = async () => {
   try {
     console.log(`${api}/users/sign_up`)
