@@ -24,6 +24,10 @@ const router = createRouter({
     {
       path: '/async',
       component: () => import('../views/AsyncView.vue')
+    },
+    {
+      path: '/todo',
+      component: () => import('../views/TodoView.vue')
     }
   ]
 })
