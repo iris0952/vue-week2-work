@@ -29,6 +29,25 @@
     <h2>登出</h2>
     <button type="button" @click="signOut">登出</button>
   </div>
+  <div>
+    <h2>Todo List</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>代辦事項</th>
+          <th></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </template>
 <script setup>
 import axios from 'axios'
