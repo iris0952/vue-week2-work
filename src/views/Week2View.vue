@@ -29,7 +29,7 @@
     <h2>登出</h2>
     <button type="button" @click="signOut">登出</button>
   </div>
-  <div>
+  <div v-if="token">
     <h2>Todo List</h2>
     <table>
       <thead>
