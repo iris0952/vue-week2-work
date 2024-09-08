@@ -74,12 +74,13 @@
               <button type="button" class="btn btn-primary" @click="signOut">登出</button>
             </div>
             <div class="mb-3">
+              <p>新增待辦事項</p>
               <input
                 v-model="newTodo"
                 @keyup.enter="addTodo"
                 type="text"
                 class="form-control"
-                placeholder="確認後按下enter"
+                placeholder="輸入完成後按下enter"
               />
             </div>
             <ul class="list-group">
