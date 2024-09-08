@@ -1,145 +1,177 @@
 <template>
-  <h1>Week2 作業</h1>
-  <div>
-    <h2>註冊</h2>
-    <input type="email" placeholder="Email" v-model="signUpField.email" />
-    <input type="text" placeholder="Password" v-model="signUpField.password" />
-    <input type="text" placeholder="暱稱" v-model="signUpField.nickname" />
-    <button type="button" @click="signUp">註冊</button> <br />
-    <p class="text-danger" v-if="signUpErrMsg">{{ signUpErrMsg }}</p>
-    <p class="text-danger" v-else>{{ signUpRes }}</p>
-  </div>
-  <div>
-    <h2>登入</h2>
-    <input type="email" placeholder="Email" v-model="signInField.email" />
-    <input type="text" placeholder="Password" v-model="signInField.password" />
-    <button type="button" @click="signIn">登入</button> <br />
-    <p class="text-danger" v-if="signInErrMsg">{{ signInErrMsg }}</p>
-    <p class="text-danger" v-else>{{ signInRes }}</p>
-  </div>
-  <div>
-    <h2>驗證</h2>
-    <div v-if="user.uid">
-      <p>UID: {{ user.uid }}</p>
-      <p>Nickname: {{ user.nickname }}</p>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="card mt-5">
+          <div class="card-body" v-if="!isLogin">
+            <h3 class="card-title text-center">{{ isRegister ? '註冊' : '登入' }}</h3>
+            <form @submit.prevent="handleSubmit">
+              <div class="mb-3">
+                <label for="account" class="form-label">帳號</label>
+                <input
+                  type="text"
+                  id="account"
+                  v-model="account"
+                  class="form-control"
+                  placeholder="輸入信箱"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="password" class="form-label">密碼</label>
+                <input
+                  type="password"
+                  id="password"
+                  v-model="password"
+                  class="form-control"
+                  placeholder="輸入密碼"
+                  required
+                />
+              </div>
+              <div v-if="isRegister" class="mb-3">
+                <label for="nickname" class="form-label">暱稱</label>
+                <input
+                  type="text"
+                  id="nickname"
+                  v-model="nickname"
+                  class="form-control"
+                  placeholder="輸入暱稱"
+                  required
+                />
+              </div>
+              <div class="d-grid gap-2">
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  @click="isRegister ? signUp() : login()"
+                >
+                  {{ isRegister ? '註冊' : '登入' }}
+                </button>
+                <button type="button" class="btn btn-secondary" @click="toggleRegister">
+                  {{ isRegister ? '返回登入' : '註冊' }}
+                </button>
+              </div>
+            </form>
+          </div>
+          <div class="card-body" v-else-if="!isCheckOut">
+            <h3 class="card-title text-center">驗證</h3>
+            <form @submit.prevent="handleSubmit">
+              <div class="mb-3">
+                <label for="account" class="form-label">Token</label>
+                <input type="text" id="account" v-model="token" class="form-control" required />
+              </div>
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary" @click="checkOut()">驗證</button>
+                <button type="button" class="btn btn-secondary" @click="backToLogin()">
+                  返回登入
+                </button>
+              </div>
+            </form>
+          </div>
+          <div class="card-body" v-else>
+            <h3 class="card-title text-center">Todo List</h3>
+            <div class="text-end mb-3">
+              <button type="button" class="btn btn-primary" @click="signOut">登出</button>
+            </div>
+            <div class="mb-3">
+              <input
+                v-model="newTodo"
+                @keyup.enter="addTodo"
+                type="text"
+                class="form-control"
+                placeholder="確認後按下enter"
+              />
+            </div>
+            <ul class="list-group">
+              <li
+                v-for="todo in todoList"
+                :key="todo.id"
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                <span v-show="!todo.isEditing">{{ todo.content }}</span>
+                <input type="text" v-model="todo.content" v-show="todo.isEditing" class="" />
+                <div>
+                  <button @click="toggleEdit(todo)" class="btn btn-primary btn-sm">
+                    {{ todo.isEditing ? '確認' : '編輯' }}
+                  </button>
+                  <button @click="removeTodo(todo.id)" class="btn btn-danger btn-sm">刪除</button>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
-    <div v-else>你還沒有登入喔！</div>
-  </div>
-  <div>
-    <h2>登出</h2>
-    <button type="button" @click="signOut">登出</button>
-  </div>
-  <div v-if="token">
-    <h2>Todo List</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>代辦事項</th>
-          <th></th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td></td>
-          <td></td>
-          <td></td>
-        </tr>
-      </tbody>
-    </table>
   </div>
 </template>
+
 <script setup>
+import { ref } from 'vue'
 import axios from 'axios'
-import { onMounted, ref } from 'vue'
 
-const api = 'https://todolist-api.hexschool.io'
+const url = 'https://todolist-api.hexschool.io'
 
-//註冊
-const signUpField = ref({
-  email: '',
-  password: '',
-  nickname: ''
-})
-
-const signUpRes = ref('')
-const signUpErrMsg = ref('')
+const account = ref('')
+const password = ref('')
+const nickname = ref('')
+const isRegister = ref(false)
+const isLogin = ref(false)
+const isCheckOut = ref(false)
+const token = ref('')
 
 const signUp = async () => {
   try {
-    const res = await axios.post(`${api}/users/sign_up`, signUpField.value)
-    console.log(res)
-    signUpRes.value = '註冊成功'
-    // signUpRes.value = res.data.uid
+    const response = await axios.post(`${url}/users/sign_up`, {
+      email: account.value,
+      password: password.value,
+      nickname: nickname.value
+    })
+    alert('註冊成功')
+    toggleRegister()
   } catch (error) {
-    console.log(error)
-    signUpErrMsg.value = error.response.data.message
+    alert('註冊失敗:' + error.message)
   }
 }
 
-//登入
-const signInField = ref({
-  email: '',
-  password: ''
-})
-
-const signInRes = ref('')
-const signInErrMsg = ref('')
-
-const signIn = async () => {
+const login = async () => {
   try {
-    const res = await axios.post(`${api}/users/sign_in`, signInField.value)
-    console.log(res)
-    // signInRes.value = res.data.token
-    signInRes.value = '登入成功'
-    document.cookie = `customTodoToken=${res.data.token};`
+    const response = await axios.post(`${url}/users/sign_in`, {
+      email: account.value,
+      password: password.value
+    })
+    token.value = response.data.token
+    alert('登入成功')
+    account.value = ''
+    password.value = ''
+    isLogin.value = true
   } catch (error) {
-    console.log(error)
-    signInErrMsg.value = error.response.data.message
+    alert('登入失敗:' + error.message)
   }
 }
 
-const user = ref({
-  nickname: '',
-  uid: ''
-})
-
-const token = ref('')
-
-//validation
-onMounted(async () => {
-  const cookie = document.cookie.replace(
-    /(?:(?:^|.*;\s*)customTodoToken\s*=\s*([^;]*).*$)|^.*$/,
-    '$1'
-  )
-  token.value = cookie
-  console.log(cookie)
-  if (cookie) {
-    validation()
-  }
-})
-
-const validation = async () => {
+const checkOut = async () => {
   try {
-    const res = await axios.get(`${api}/users/checkout`, {
+    if (!token.value) {
+      alert('Token is missing')
+      return
+    }
+    const response = await axios.get(`${url}/users/checkout`, {
       headers: {
         Authorization: token.value
       }
     })
-    user.value = res.data
-    // getTodos()
-  } catch (err) {
-    // validation failed should logout the user
-    console.log(err.response.data.message)
-    signOut()
+    isCheckOut.value = true
+    alert('驗證成功 UID: ' + response.data.uid)
+    getTodo()
+  } catch (error) {
+    alert('驗證失敗: ' + error.message)
   }
 }
 
-// signout
 const signOut = async () => {
   try {
-    await axios.post(
-      `${api}/users/sign_out`,
+    const response = await axios.post(
+      `${url}/users/sign_out`,
       {},
       {
         headers: {
@@ -147,17 +179,105 @@ const signOut = async () => {
         }
       }
     )
+    alert('登出成功')
     token.value = ''
-    document.cookie = `customTodoToken=;`
-    user.value = {}
-  } catch (err) {
-    console.log(err.response.data.message)
+    backToLogin()
+  } catch (error) {
+    console.log(error)
+
+    alert('登出失敗: ' + error.message)
   }
 }
+
+const todoList = ref([])
+
+const getTodo = async () => {
+  const response = await axios.get(`${url}/todos`, {
+    headers: {
+      Authorization: token.value
+    }
+  })
+  todoList.value = response.data.data.map((todo) => ({ ...todo, isEditing: false }))
+}
+
+const newTodo = ref('')
+
+const addTodo = async () => {
+  try {
+    const todo = {
+      content: newTodo.value
+    }
+
+    await axios.post(`${url}/todos`, todo, {
+      headers: {
+        Authorization: token.value
+      }
+    })
+
+    alert('新增成功')
+    newTodo.value = ''
+    getTodo()
+  } catch (error) {
+    alert('新增失敗:' + error.message)
+  }
+}
+
+const removeTodo = async (id) => {
+  try {
+    await axios.delete(`${url}/todos/${id}`, {
+      headers: {
+        Authorization: token.value
+      }
+    })
+
+    alert('刪除成功')
+    getTodo()
+  } catch (error) {
+    alert('刪除失敗:' + error.message)
+  }
+}
+
+const toggleEdit = (todo) => {
+  if (todo.isEditing) {
+    updateTodo(todo.id)
+  } else {
+    todo.isEditing = true
+  }
+}
+
+const updateTodo = async (id) => {
+  try {
+    const todo = todoList.value.find((todo) => todo.id === id)
+
+    await axios.put(`${url}/todos/${id}`, todo, {
+      headers: {
+        Authorization: token.value
+      }
+    })
+
+    getTodo()
+    alert('編輯成功')
+  } catch (error) {
+    alert('編輯失敗:' + error.message)
+  }
+}
+
+const backToLogin = () => {
+  token.value = ''
+  isRegister.value = false
+  isLogin.value = false
+}
+
+const toggleRegister = () => {
+  isRegister.value = !isRegister.value
+  account.value = ''
+  password.value = ''
+  nickname.value = ''
+}
 </script>
+
 <style>
-.text-danger {
-  color: red;
-  font-size: 0.9rem;
+body {
+  background-color: #f8f9fa;
 }
 </style>
